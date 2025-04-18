@@ -13,11 +13,13 @@ import {
   useReactFlow
 } from '@xyflow/react';
 import { useCallback, useRef } from 'react';
+import { useSelectedNode } from '@/store/useSelectedNode';
 
 import '@xyflow/react/dist/style.css';
 
 import NewsNode from '@/components/Nodes/NewsNode';
 import ScratchNote from '@/components/Nodes/ScratchNote';
+import Sidebar from '@/components/Sidebar';
 
 const nodeTypes = {
   newsNode: NewsNode,
@@ -42,6 +44,24 @@ const initialNodes = [
         'Cupertino’s newest 2‑nm chip delivers a 30 % performance bump while cutting power draw by half.',
       image: '/images/apple-m4.png',
       url: 'https://example.com/apple-m4',
+      reactions: {
+        shareholder: {
+          sentiment: 'positive',
+          comment: 'Strong upside — expecting stock jump',
+        },
+        bank: {
+          sentiment: 'neutral',
+          comment: 'No major credit exposure changes',
+        },
+        partner: {
+          sentiment: 'positive',
+          comment: 'More funds means more collaboration',
+        },
+        client: {
+          sentiment: 'negative',
+          comment: 'Pricing may increase — not good',
+        },
+      },
     },
   },
   {
@@ -109,7 +129,7 @@ const NewsFlowPage = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const connectingNodeId = useRef<string | null>(null);
   const { screenToFlowPosition } = useReactFlow();
-
+  const setSelectedNode = useSelectedNode((state) => state.setSelectedNode);
 
   // Capture the source node ID on connect start
   const onConnectStart = useCallback((_: MouseEvent, params: OnConnectStartParams) => {
@@ -163,11 +183,15 @@ const NewsFlowPage = () => {
         onConnectEnd={onConnectEnd}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        onNodeClick={(_, node) => {setSelectedNode(node)}}
         fitView
+        onPaneClick={() => setSelectedNode(null)}
+
       >
         <Background gap={24} size={1} />
         <Controls />
       </ReactFlow>
+      <Sidebar />
     </div>
 
   );
