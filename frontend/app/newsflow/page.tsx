@@ -1,5 +1,6 @@
 'use client';
 
+
 import {
   Background,
   Controls,
@@ -7,12 +8,25 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
+  Connection,
+  OnConnectStartParams,
+  useReactFlow
 } from '@xyflow/react';
+import { useCallback, useRef } from 'react';
+
 import '@xyflow/react/dist/style.css';
 
 import NewsNode from '@/components/Nodes/NewsNode';
+import ScratchNote from '@/components/Nodes/ScratchNote';
 
-const nodeTypes = { newsNode: NewsNode } //as const;
+const nodeTypes = {
+  newsNode: NewsNode,
+  scratchNote: ScratchNote,
+} as const;
+
+
+
+// const nodeTypes = { newsNode: NewsNode } //as const;
 
 /* -------------------------------------------------
  * Tiny, totally‑made‑up news dataset
@@ -86,27 +100,85 @@ const initialEdges = [
   { id: 'e4-1', source: '4', target: '1', animated: true, label: 'Market reaction' },
 ];
 
-export default function NewsFlowPage() {
+// Generate unique IDs
+let idCounter = 1000;
+const getId = () => `${idCounter++}`;
+
+const NewsFlowPage = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const connectingNodeId = useRef<string | null>(null);
+  const { screenToFlowPosition } = useReactFlow();
+
+
+  // Capture the source node ID on connect start
+  const onConnectStart = useCallback((_: MouseEvent, params: OnConnectStartParams) => {
+    connectingNodeId.current = params.nodeId;
+  }, []);
+
+  // Handle edge drop on canvas
+  const onConnectEnd = useCallback(
+    (event, connectionState) => {
+      // when a connection is dropped on the pane it's not valid
+      if (!connectionState.isValid) {
+        // we need to remove the wrapper bounds, in order to get the correct position
+        const id = getId();
+        const { clientX, clientY } =
+          'changedTouches' in event ? event.changedTouches[0] : event;
+        const newNode = {
+          id,
+          position: screenToFlowPosition({
+            x: clientX,
+            y: clientY,
+          }),
+          data: { label: `Node ${id}` },
+          origin: [0.5, 0.0],
+          type: 'scratchNote',
+        };
+ 
+        setNodes((nds) => nds.concat(newNode));
+        setEdges((eds) =>
+          eds.concat({ id, source: connectionState.fromNode.id, target: id }),
+        );
+      }
+    },
+    [screenToFlowPosition],
+  );
+
+  // Handle standard connections
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    []
+  );
 
   return (
+
+    <div style={{ width: '100%', height: '100vh' }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
+        onConnect={onConnect}
+        nodeTypes={nodeTypes}
+        fitView
+      >
+        <Background gap={24} size={1} />
+        <Controls />
+      </ReactFlow>
+    </div>
+
+  );
+};
+
+const NewsFlowPageWrapper: React.FC = () => {
+  return (
     <ReactFlowProvider>
-      <main className="h-screen w-full">
-      <div style={{ width: '100%', height: '100vh' }}>
-        <ReactFlow
-          fitView
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          nodeTypes={nodeTypes}
-        >
-          <Background gap={24} size={1} />
-          <Controls />
-        </ReactFlow>
-        </div>
-      </main>
+      <NewsFlowPage />
     </ReactFlowProvider>
   );
 }
+
+export default NewsFlowPageWrapper;

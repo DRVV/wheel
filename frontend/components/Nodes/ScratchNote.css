@@ -1,0 +1,22 @@
+.scratch-node {
+    width: 220px;
+    background: #fffbe7;
+    border: 1px solid #e2c55b;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .scratch-text {
+    flex: 1;
+    min-height: 120px;
+    padding: 8px;
+    border: none;
+    resize: vertical;
+    font-size: 14px;
+    line-height: 1.4;
+    background: transparent;
+  }
+  .scratch-text:focus { outline: none; }
+  
