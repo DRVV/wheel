@@ -131,6 +131,46 @@ const NewsFlowPage = () => {
   const { screenToFlowPosition } = useReactFlow();
   const setSelectedNode = useSelectedNode((state) => state.setSelectedNode);
 
+  // handle post
+  const onSubmitText = async (sourceId: string, text: string) => {
+    const res = await fetch('/api/generate-graph', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: text }),
+    });
+
+    
+  
+    const result = await res.json(); // { nodes: [], edges: [] }
+    console.log(result);
+  
+    // position relative to source
+    const sourceNode = nodes.find(n => n.id === sourceId);
+    if (!sourceNode) return;
+  
+    const offsetX = 250;
+    const offsetY = 100;
+  
+    const newNodes = result.nodes.map((n: any, i: number) => ({
+      ...n,
+      id: `n${Date.now()}-${i}`,
+      position: {
+        x: sourceNode.position.x + offsetX + i * 40,
+        y: sourceNode.position.y + offsetY,
+      },
+    }));
+  
+    const newEdges = result.edges.map((e: any, i: number) => ({
+      ...e,
+      id: `e${Date.now()}-${i}`,
+      source: sourceId,
+      target: newNodes[i].id,
+    }));
+  
+    setNodes(nds => [...nds, ...newNodes]);
+    setEdges(eds => [...eds, ...newEdges]);
+  };
+
   // Capture the source node ID on connect start
   const onConnectStart = useCallback((_: MouseEvent, params: OnConnectStartParams) => {
     connectingNodeId.current = params.nodeId;
@@ -151,7 +191,7 @@ const NewsFlowPage = () => {
             x: clientX,
             y: clientY,
           }),
-          data: { label: `Node ${id}` },
+          data: { label: `Node ${id}` , onSubmitText: onSubmitText},
           origin: [0.5, 0.0],
           type: 'scratchNote',
         };

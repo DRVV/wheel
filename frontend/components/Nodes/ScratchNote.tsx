@@ -1,23 +1,28 @@
-'use client';
-
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import './ScratchNote.css';
 
-type ScratchData = { text: string };
+type ScratchNoteData = {
+  text: string;
+  onSubmitText?: (id: string, text: string) => void;
+};
 
-export default function ScratchNote({ id, data }: NodeProps<ScratchData>) {
+export default function ScratchNote({ id, data }: NodeProps<ScratchNoteData>) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      data.onSubmitText?.(id, e.currentTarget.value);
+      e.currentTarget.blur();
+    }
+  };
+
   return (
-    <div className="scratch-node">
-      <Handle type="target" position={Position.Left} />
+    <div style={{ width: 220, background: '#fffbe7', border: '1px solid #e2c55b', borderRadius: 10 }}>
+      <Handle type="target" position={Position.Top} />
       <textarea
-        className="scratch-text"
+        style={{ width: '100%', minHeight: 120, padding: 8 }}
         defaultValue={data.text}
-        onBlur={e => {
-          // Optional: persist the text to state / DB here
-          console.log(`Note ${id} updated →`, e.target.value);
-        }}
+        onKeyDown={handleKeyDown}
       />
-      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={Position.Bottom} />
     </div>
   );
 }
